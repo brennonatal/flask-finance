@@ -11,8 +11,6 @@ RUN pip install -r requirements.txt
 
 COPY . /app
 
-ENV API_KEY=...
-
 ENTRYPOINT [ "python3" ]
 
 CMD [ "app.py" ]

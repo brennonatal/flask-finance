@@ -1,9 +1,12 @@
 import csv
 import os
 import urllib.request
-
-from flask import redirect, render_template, request, session
 from functools import wraps
+
+from dotenv import load_dotenv
+from flask import redirect, render_template, request, session
+
+load_dotenv()
 
 
 def apology(message, code=400):
