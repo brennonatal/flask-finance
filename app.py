@@ -106,7 +106,7 @@ def buy():
 
         # Book keeping (TODO: should be wrapped with a transaction)
         conn.execute(text(f"UPDATE users SET cash = cash - {total_price} WHERE id = {session['user_id']}"))
-        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, {request.form.get('symbol')}, {shares}, {price_per_share})"))
+        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, '{request.form.get('symbol')}', {shares}, {price_per_share})"))
 
         flash("Bought!")
 
@@ -177,7 +177,7 @@ def change_password():
 
         # Update database
         hash = generate_password_hash(request.form.get("new_password"))
-        rows = conn.execute(text(f"UPDATE users SET hash = {hash} WHERE id = {session['user_id']}"))
+        rows = conn.execute(text(f"UPDATE users SET hash = '{hash}' WHERE id = {session['user_id']}"))
 
         # Show flash
         flash("Changed!")
@@ -204,7 +204,7 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = conn.execute(text(f"SELECT * FROM users WHERE username = {request.form.get('username')}"))
+        rows = conn.execute(text(f"SELECT * FROM users WHERE username = '{request.form.get('username')}'"))
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
@@ -271,7 +271,7 @@ def register():
 
         # hash the password and insert a new user in the database
         hash = generate_password_hash(request.form.get("password"))
-        new_user_id = conn.execute(text(f"INSERT INTO users (username, hash) VALUES({request.form.get('username')}, {hash})"))
+        new_user_id = conn.execute(text(f"INSERT INTO users (username, hash) VALUES('{request.form.get('username')}', '{hash}')"))
 
         # unique username constraint violated?
         if not new_user_id:
@@ -313,7 +313,7 @@ def sell():
             return apology("can't sell less than or 0 shares", 400)
 
         # Check if we have enough shares
-        stock = conn.execute(text(f"SELECT SUM(shares) as total_shares FROM transactions WHERE user_id = {session['user_id']} AND symbol = {request.form.get('symbol')} GROUP BY symbol"))
+        stock = conn.execute(text(f"SELECT SUM(shares) as total_shares FROM transactions WHERE user_id = {session['user_id']} AND symbol = '{request.form.get('symbol')}' GROUP BY symbol"))
 
         if len(stock) != 1 or stock[0]["total_shares"] <= 0 or stock[0]["total_shares"] < shares:
             return apology("you can't sell less than 0 or more than you own", 400)
@@ -331,7 +331,7 @@ def sell():
 
         # Book keeping (TODO: should be wrapped with a transaction)
         conn.execute(text(f"UPDATE users SET cash = cash + {total_price} WHERE id = {session['user_id']}"))
-        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, {request.form.get('symbol')}, {shares}, {price_per_share})"))
+        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, '{request.form.get('symbol')}', {shares}, {price_per_share})"))
                     # shares=-shares``
 
         flash("Sold!")
