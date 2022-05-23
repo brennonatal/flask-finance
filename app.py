@@ -54,9 +54,9 @@ def index():
 
     # look up the current user
     users = conn.execute(text(
-        "SELECT cash FROM users WHERE id = :user_id", user_id=session["user_id"]))
+        f"SELECT cash FROM users WHERE id = {session['user_id']}"))
     stocks = conn.execute(text(
-        "SELECT symbol, SUM(shares) as total_shares FROM transactions WHERE user_id = :user_id GROUP BY symbol HAVING total_shares > 0", user_id=session["user_id"]))
+        f"SELECT symbol, SUM(shares) as total_shares FROM transactions WHERE user_id = {session['user_id']} GROUP BY symbol HAVING total_shares > 0"))
     quotes = {}
 
     for stock in stocks:
@@ -92,7 +92,7 @@ def buy():
 
         # Query database for username
         rows = conn.execute(text(
-            "SELECT cash FROM users WHERE id = :user_id", user_id=session["user_id"]))
+            f"SELECT cash FROM users WHERE id = {session['user_id']}"))
 
         # How much $$$ the user still has in her account
         cash_remaining = rows[0]["cash"]
@@ -105,13 +105,8 @@ def buy():
             return apology("not enough funds")
 
         # Book keeping (TODO: should be wrapped with a transaction)
-        conn.execute(text("UPDATE users SET cash = cash - :price WHERE id = :user_id",
-                    price=total_price, user_id=session["user_id"]))
-        conn.execute(text("INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES(:user_id, :symbol, :shares, :price)",
-                    user_id=session["user_id"],
-                    symbol=request.form.get("symbol"),
-                    shares=shares,
-                    price=price_per_share))
+        conn.execute(text(f"UPDATE users SET cash = cash - {total_price} WHERE id = {session['user_id']}"))
+        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, {request.form.get('symbol')}, {shares}, {price_per_share})"))
 
         flash("Bought!")
 
@@ -127,7 +122,7 @@ def history():
     """Show history of transactions"""
 
     transactions = conn.execute(text(
-        "SELECT symbol, shares, price_per_share, created_at FROM transactions WHERE user_id = :user_id ORDER BY created_at ASC", user_id=session["user_id"]))
+        f"SELECT symbol, shares, price_per_share, created_at FROM transactions WHERE user_id = {session['user_id']} ORDER BY created_at ASC"))
 
     return render_template("history.html", transactions=transactions)
 
@@ -142,8 +137,7 @@ def add_funds():
         except:
             return apology("amount must be a real number", 400)
 
-        conn.execute(text("UPDATE users SET cash = cash + :amount WHERE id = :user_id",
-                    user_id=session["user_id"], amount=amount))
+        conn.execute(text(f"UPDATE users SET cash = cash + {amount} WHERE id = {session['user_id']}"))
 
         return redirect(url_for("index"))
     else:
@@ -163,7 +157,7 @@ def change_password():
 
         # Query database for user_id
         rows = conn.execute(text(
-            "SELECT hash FROM users WHERE id = :user_id", user_id=session["user_id"]))
+            f"SELECT hash FROM users WHERE id = {session['user_id']}"))
 
         # Ensure current password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("current_password")):
@@ -183,8 +177,7 @@ def change_password():
 
         # Update database
         hash = generate_password_hash(request.form.get("new_password"))
-        rows = conn.execute(text("UPDATE users SET hash = :hash WHERE id = :user_id",
-                           user_id=session["user_id"], hash=hash))
+        rows = conn.execute(text(f"UPDATE users SET hash = {hash} WHERE id = {session['user_id']}"))
 
         # Show flash
         flash("Changed!")
@@ -211,8 +204,7 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = conn.execute(text("SELECT * FROM users WHERE username = :username",
-                           username=request.form.get("username")))
+        rows = conn.execute(text(f"SELECT * FROM users WHERE username = {request.form.get('username')}"))
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
@@ -279,9 +271,7 @@ def register():
 
         # hash the password and insert a new user in the database
         hash = generate_password_hash(request.form.get("password"))
-        new_user_id = conn.execute(text("INSERT INTO users (username, hash) VALUES(:username, :hash)",
-                                  username=request.form.get("username"),
-                                  hash=hash))
+        new_user_id = conn.execute(text(f"INSERT INTO users (username, hash) VALUES({request.form.get('username')}, {hash})"))
 
         # unique username constraint violated?
         if not new_user_id:
@@ -323,15 +313,14 @@ def sell():
             return apology("can't sell less than or 0 shares", 400)
 
         # Check if we have enough shares
-        stock = conn.execute(text("SELECT SUM(shares) as total_shares FROM transactions WHERE user_id = :user_id AND symbol = :symbol GROUP BY symbol",
-                            user_id=session["user_id"], symbol=request.form.get("symbol")))
+        stock = conn.execute(text(f"SELECT SUM(shares) as total_shares FROM transactions WHERE user_id = {session['user_id']} AND symbol = {request.form.get('symbol')} GROUP BY symbol"))
 
         if len(stock) != 1 or stock[0]["total_shares"] <= 0 or stock[0]["total_shares"] < shares:
             return apology("you can't sell less than 0 or more than you own", 400)
 
         # Query database for username
         rows = conn.execute(text(
-            "SELECT cash FROM users WHERE id = :user_id", user_id=session["user_id"]))
+            f"SELECT cash FROM users WHERE id = {session['user_id']}"))
 
         # How much $$$ the user still has in her account
         cash_remaining = rows[0]["cash"]
@@ -341,13 +330,9 @@ def sell():
         total_price = price_per_share * shares
 
         # Book keeping (TODO: should be wrapped with a transaction)
-        conn.execute(text("UPDATE users SET cash = cash + :price WHERE id = :user_id",
-                    price=total_price, user_id=session["user_id"]))
-        conn.execute(text("INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES(:user_id, :symbol, :shares, :price)",
-                    user_id=session["user_id"],
-                    symbol=request.form.get("symbol"),
-                    shares=-shares,
-                    price=price_per_share))
+        conn.execute(text(f"UPDATE users SET cash = cash + {total_price} WHERE id = {session['user_id']}"))
+        conn.execute(text(f"INSERT INTO transactions (user_id, symbol, shares, price_per_share) VALUES({session['user_id']}, {request.form.get('symbol')}, {shares}, {price_per_share})"))
+                    # shares=-shares``
 
         flash("Sold!")
 
@@ -355,7 +340,7 @@ def sell():
 
     else:
         stocks = conn.execute(text(
-            "SELECT symbol, SUM(shares) as total_shares FROM transactions WHERE user_id = :user_id GROUP BY symbol HAVING total_shares > 0", user_id=session["user_id"]))
+            f"SELECT symbol, SUM(shares) as total_shares FROM transactions WHERE user_id = {session['user_id']} GROUP BY symbol HAVING total_shares > 0"))
 
         return render_template("sell.html", stocks=stocks)
 
