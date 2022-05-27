@@ -277,7 +277,7 @@ def register():
         # hash the password and insert a new user in the database
         hash = generate_password_hash(request.form.get("password"))
         new_user_id = conn.execute(text(
-            f"INSERT INTO users (username, hash) VALUES('{request.form.get('username')}', '{hash}')")).rowcount
+            f"INSERT INTO users (username, hash, cash) VALUES('{request.form.get('username')}', '{hash}', 10000)")).rowcount
 
         # unique username constraint violated?
         if not new_user_id:
